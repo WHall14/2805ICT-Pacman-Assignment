@@ -12,13 +12,12 @@ class Entity:
 
         self.x = startingX
         self.y = startingY
-        self.stepSize = 1
+        self.stepSize = 2
         self.entitySize = entitySize
         self.window = window
         self.direction = 'nil'
-        self.previousDirection = 'nil'
+        self.previousDirection = 'right'
         self.hitBox = (self.x, self.y, self.entitySize, self.entitySize)
-
         self.entityImage = entityImage
 
     def possibleMoves(self):
@@ -50,16 +49,12 @@ class Entity:
                     collision = True
         return collision
 
-    def entityCollisionCheck(self):
-        pass
-
 
 class Ghost(Entity):
 
     def __init__(self, startingX, startingY, entitySize, window, entityImage):
         super().__init__(startingX, startingY, entitySize, window, entityImage)
         self.direction = 'right'
-
         # image
         self.ghostPic = pygame.image.load(self.entityImage)
         self.ghostPic = pygame.transform.scale(self.ghostPic, (self.entitySize, self.entitySize))
@@ -69,8 +64,8 @@ class Ghost(Entity):
         self.hitBox = (self.x, self.y, self.entitySize, self.entitySize)
 
     def move(self):
-        if (self.x + 1, self.y) in TwoDMap.nodes or (self.x, self.y + 1) in TwoDMap.nodes \
-                or (self.x + 1, self.y + 1) in TwoDMap.nodes:
+        if (self.x + 1, self.y + 1) in TwoDMap.nodes or (self.x + 2, self.y + 1) in TwoDMap.nodes or \
+                (self.x + 1, self.y + 2) in TwoDMap.nodes or (self.x + 2, self.y + 2) in TwoDMap.nodes:
             self.randomMove()
         else:
             if self.direction == 'left':
@@ -83,36 +78,33 @@ class Ghost(Entity):
                 self.y += self.stepSize
 
     def randomMove(self):
-        pathFound = False
-        while not pathFound:
-            temp = random.randint(1, 4)
-            if temp == 1:
-                self.direction = 'left'
-                if not self.possibleMoves():
+        optionalMoves = ['left', 'right', 'up', 'down']
+        random.shuffle(optionalMoves)
+        index = optionalMoves.index(self.previousDirection)
+        if index != 3:
+            temp = optionalMoves[3]
+            optionalMoves[3] = optionalMoves[index]
+            optionalMoves[index] = temp
+        for x in range(0, 4):
+            self.direction = optionalMoves[x]
+            self.previousDirection = self.direction
+            if not self.possibleMoves():
+                if self.direction == 'left':
                     self.x -= self.stepSize
-                    pathFound = True
-            elif temp == 2:
-                self.direction = 'right'
-                if not self.possibleMoves():
+                elif self.direction == 'right':
                     self.x += self.stepSize
-                    pathFound = True
-            elif temp == 3:
-                self.direction = 'up'
-                if not self.possibleMoves():
+                elif self.direction == 'up':
                     self.y -= self.stepSize
-                    pathFound = True
-            elif temp == 4:
-                self.direction = 'down'
-                if not self.possibleMoves():
+                elif self.direction == 'down':
                     self.y += self.stepSize
-                    pathFound = True
+                break
 
 
 class Pacman(Entity):
 
     def __init__(self, startingX, startingY, entitySize, window, entityImage):
         super().__init__(startingX, startingY, entitySize, window, entityImage)
-        self.stepSize = 1
+        self.stepSize = 2
 
         # images
         self.score = -10
@@ -134,36 +126,39 @@ class Pacman(Entity):
         self.hitBox = (self.x, self.y, self.entitySize, self.entitySize)
 
     def move(self):
-
         if self.direction == 'left' and self.x > 0:
             collision = self.possibleMoves()
             if collision:
-                self.stepSize = 1
+                self.stepSize = 2
                 self.direction = self.previousDirection
             if not collision:
                 self.x -= self.stepSize
+                return
         elif self.direction == 'right' and self.x < screenX - self.entitySize - self.stepSize:
             collision = self.possibleMoves()
             if collision:
-                self.stepSize = 1
+                self.stepSize = 2
                 self.direction = self.previousDirection
             if not collision:
                 self.x += self.stepSize
+                return
         elif self.direction == 'up' and self.y > 0:
             collision = self.possibleMoves()
             if collision:
-                self.stepSize = 1
+                self.stepSize = 2
                 self.direction = self.previousDirection
             if not collision:
                 self.y -= self.stepSize
+                return
         elif self.direction == 'down' and self.y < screenY - self.entitySize - self.stepSize:
             collision = self.possibleMoves()
             if collision:
-                self.stepSize = 1
+                self.stepSize = 2
                 self.direction = self.previousDirection
             if not collision:
                 self.y += self.stepSize
-        player.stepSize = 1
+                return
+        return False
 
     def dotCollision(self, dot):
         if dot.visible is True and dot.hitBox[0] < self.hitBox[0] + self.hitBox[2] / 2 and dot.hitBox[1] < \
@@ -248,17 +243,13 @@ class TwoDMap:
 
     def teleportCheck(self):
         for entity in entityList:
-            if ((entity.x, entity.y) == (0, 275) or (entity.x + 1, entity.y) == (0, 275) or
-                (entity.x, entity.y + 1) == (0, 275) or (entity.x + 1, entity.y + 1) == (0, 275)) and \
-                    entity.direction == 'left':
-                entity.x = 475
-                entity.y = 275
+            if entity.x < 1:
+                entity.x = 471
+                entity.y = 274
 
-            if ((entity.x, entity.y) == (474, 275) or (entity.x + 1, entity.y) == (474, 275) or
-                (entity.x, entity.y + 1) == (474, 275) or (entity.x + 1, entity.y + 1) == (474, 275)) and \
-                    entity.direction == 'right':
-                entity.x = 0
-                entity.y = 275
+            if entity.x > 471:
+                entity.x = 1
+                entity.y = 274
 
     def dotCheck(self):
         for dot in self.dots:
@@ -314,11 +305,11 @@ icon = pygame.image.load('icon.png')
 pygame.display.set_icon(icon)
 
 # initialising the object player (could be Pac-man but used player for re-usability and understandability)
-clyde = Ghost(200, 200, 26, screen, 'clyde.jpg')
-pinky = Ghost(225, 200, 26, screen, 'pinky.jpg')
-inky = Ghost(250, 200, 26, screen, 'inky.jpg')
-blinky = Ghost(275, 200, 26, screen, 'blinky.jpg')
-player = Pacman(25, 25, 26, screen, 'pac.png')
+clyde = Ghost(199, 199, 27, screen, 'clyde.jpg')
+pinky = Ghost(224, 199, 27, screen, 'pinky.jpg')
+inky = Ghost(249, 199, 27, screen, 'inky.jpg')
+blinky = Ghost(274, 199, 27, screen, 'blinky.jpg')
+player = Pacman(24, 24, 27, screen, 'pac.png')
 entityList = [clyde, pinky, inky, blinky, player]
 TwoDMap = TwoDMap()
 TwoDMap.displayDefaultMap()
@@ -370,22 +361,28 @@ while gameRunning:
         if keys[pygame.K_LEFT]:
             player.previousDirection = player.direction
             player.direction = 'left'
+            player.stepSize = 1
             player.move()
         elif keys[pygame.K_RIGHT]:
             player.previousDirection = player.direction
             player.direction = 'right'
+            player.stepSize = 1
             player.move()
         elif keys[pygame.K_UP]:
             player.previousDirection = player.direction
             player.direction = 'up'
+            player.stepSize = 1
             player.move()
         elif keys[pygame.K_DOWN]:
             player.previousDirection = player.direction
             player.direction = 'down'
+            player.stepSize = 1
             player.move()
         else:
+            player.stepSize = 2
+        if player.move() is False:
             player.stepSize = 1
-        player.move()
+            player.move()
         inky.move()
         blinky.move()
         pinky.move()
@@ -393,8 +390,8 @@ while gameRunning:
 
         if player.ghostCollisionCheck():
             winsound.Beep(2500, 200)
-            player.x = 25
-            player.y = 25
+            player.x = 24
+            player.y = 24
         TwoDMap.teleportCheck()
         TwoDMap.dotCheck()
         displayGameWindow()
