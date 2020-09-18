@@ -127,43 +127,38 @@ class Pacman(Entity):
 
     def move(self):
         if self.direction == 'left' and self.x > 0:
-            collision = self.possibleMoves()
-            if collision:
+            if self.possibleMoves():
                 self.stepSize = 2
                 self.direction = self.previousDirection
-            if not collision:
+            else:
                 self.x -= self.stepSize
                 return
         elif self.direction == 'right' and self.x < screenX - self.entitySize - self.stepSize:
-            collision = self.possibleMoves()
-            if collision:
+            if self.possibleMoves():
                 self.stepSize = 2
                 self.direction = self.previousDirection
-            if not collision:
+            else:
                 self.x += self.stepSize
                 return
         elif self.direction == 'up' and self.y > 0:
-            collision = self.possibleMoves()
-            if collision:
+            if self.possibleMoves():
                 self.stepSize = 2
                 self.direction = self.previousDirection
-            if not collision:
+            else:
                 self.y -= self.stepSize
                 return
         elif self.direction == 'down' and self.y < screenY - self.entitySize - self.stepSize:
-            collision = self.possibleMoves()
-            if collision:
+            if self.possibleMoves():
                 self.stepSize = 2
                 self.direction = self.previousDirection
-            if not collision:
+            else:
                 self.y += self.stepSize
                 return
         return False
 
     def dotCollision(self, dot):
         if dot.visible is True and dot.hitBox[0] < self.hitBox[0] + self.hitBox[2] / 2 and dot.hitBox[1] < \
-                self.hitBox[1] + \
-                self.hitBox[3] / 2 and dot.hitBox[0] + dot.hitBox[3] > self.hitBox[0] and \
+                self.hitBox[1] + self.hitBox[3] / 2 and dot.hitBox[0] + dot.hitBox[3] > self.hitBox[0] and \
                 dot.hitBox[1] + dot.hitBox[2] > self.hitBox[1]:
             dot.visible = False
             player.score += 10
