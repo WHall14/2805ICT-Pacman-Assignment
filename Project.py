@@ -125,7 +125,9 @@ class Pacman(Entity):
             self.window.blit(self.playerDownPic, (self.x, self.y))
         self.hitBox = (self.x, self.y, self.entitySize, self.entitySize)
 
-    def move(self):
+    def move(self, direction):
+        player.previousDirection = player.direction
+        player.direction = direction
         if self.direction == 'left' and self.x > 0:
             if self.possibleMoves():
                 self.stepSize = 2
@@ -261,17 +263,22 @@ class TwoDMap:
 
 def displayMainMenu():
     screen.fill((255, 255, 255))
-    if not mouseRestExit:
-        pygame.draw.rect(screen, (128, 0, 0), (200, 350, 100, 50))
-    else:
-        pygame.draw.rect(screen, (178, 0, 0), (200, 350, 100, 50))
     if not mouseRestPlay:
-        pygame.draw.rect(screen, (0, 128, 0), (200, 250, 100, 50))
+        pygame.draw.rect(screen, (0, 128, 0), (175, 250, 150, 50))
     else:
-        pygame.draw.rect(screen, (0, 178, 0), (200, 250, 100, 50))
+        pygame.draw.rect(screen, (0, 178, 0), (175, 250, 150, 50))
+    if not mouseRestConfigure:
+        pygame.draw.rect(screen, (0, 0, 128), (175, 350, 150, 50))
+    else:
+        pygame.draw.rect(screen, (0, 0, 178), (175, 350, 150, 50))
+    if not mouseRestExit:
+        pygame.draw.rect(screen, (128, 0, 0), (175, 450, 150, 50))
+    else:
+        pygame.draw.rect(screen, (178, 0, 0), (175, 450, 150, 50))
     screen.blit(textTitle, textRectTitle)
     screen.blit(textExit, textRectExit)
     screen.blit(textPlay, textRectPlay)
+    screen.blit(textConfigure, textRectConfigure)
     pygame.display.update()
 
 
@@ -319,15 +326,21 @@ textTitle = fontTitle.render('Pac-Man Game', True, (0, 0, 0))
 textRectTitle = textTitle.get_rect()
 textRectTitle.center = (250, 125)
 
-# exit button text and creation
-textExit = fontButtons.render('Exit', True, (255, 255, 255))
-textRectExit = textExit.get_rect()
-textRectExit.center = (250, 375)
-
 # Play button text and creation
 textPlay = fontButtons.render('Play', True, (255, 255, 255))
 textRectPlay = textPlay.get_rect()
 textRectPlay.center = (250, 275)
+
+# configure button text and creation
+textConfigure = fontButtons.render('Configure', True, (255, 255, 255))
+textRectConfigure = textPlay.get_rect()
+textRectConfigure.center = (225, 375)
+
+# exit button text and creation
+textExit = fontButtons.render('Exit', True, (255, 255, 255))
+textRectExit = textExit.get_rect()
+textRectExit.center = (250, 475)
+
 
 scoreText = fontScore.render('Score:', True, (255, 255, 255))
 scoreDisplay = scoreText.get_rect()
@@ -338,9 +351,12 @@ scoreDisplayVar.center = (230, 280)
 # loop booleans
 mouseRestPlay = False
 mouseRestExit = False
+mouseRestConfigure= False
 menu = True
 gameScreen = False
+configScreen = False
 gameRunning = True
+
 
 # clock used for FPS
 clock = pygame.time.Clock()
@@ -354,30 +370,22 @@ while gameRunning:
     if gameScreen:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
-            player.previousDirection = player.direction
-            player.direction = 'left'
             player.stepSize = 1
-            player.move()
+            player.move('left')
         elif keys[pygame.K_RIGHT]:
-            player.previousDirection = player.direction
-            player.direction = 'right'
             player.stepSize = 1
-            player.move()
+            player.move('right')
         elif keys[pygame.K_UP]:
-            player.previousDirection = player.direction
-            player.direction = 'up'
             player.stepSize = 1
-            player.move()
+            player.move('up')
         elif keys[pygame.K_DOWN]:
-            player.previousDirection = player.direction
-            player.direction = 'down'
             player.stepSize = 1
-            player.move()
+            player.move('down')
         else:
             player.stepSize = 2
-        if player.move() is False:
+        if player.move(player.direction) is False:
             player.stepSize = 1
-            player.move()
+            player.move(player.previousDirection)
         inky.move()
         blinky.move()
         pinky.move()
@@ -394,19 +402,28 @@ while gameRunning:
     elif menu:
         mouse = pygame.mouse.get_pos()
         click = pygame.mouse.get_pressed()
-        if 200 + 100 > mouse[0] > 200 and 250 + 50 > mouse[1] > 250:
+        if 200 + 150 > mouse[0] > 200 and 250 + 50 > mouse[1] > 250:
             mouseRestPlay = True
             if click[0] == 1:
-                menu = False
                 gameScreen = True
-
-        elif 200 + 100 > mouse[0] > 200 and 350 + 50 > mouse[1] > 350:
+                menu = False
+        elif 200 + 150 > mouse[0] > 200 and 350 + 50 > mouse[1] > 350:
+            mouseRestConfigure = True
+            if click[0] == 1:
+                configScreen = True
+                menu = False
+        elif 200 + 150 > mouse[0] > 200 and 450 + 50 > mouse[1] > 450:
             mouseRestExit = True
             if click[0] == 1:
                 gameRunning = False
         else:
+            mouseRestConfigure = False
             mouseRestPlay = False
             mouseRestExit = False
         displayMainMenu()
+
+    elif configScreen: # beginning for configuration
+        menu = True
+        configScreen = False
 
 pygame.quit()
