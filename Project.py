@@ -1,6 +1,7 @@
 import pygame
 import random
 import winsound
+import time
 
 pygame.init()
 
@@ -112,6 +113,10 @@ class Pacman(Entity):
         self.playerRightPic = pygame.transform.scale(self.playerRightPic, (self.entitySize, self.entitySize))
         self.playerLeftPic = pygame.transform.flip(self.playerRightPic, self.entitySize, self.entitySize)
         self.playerUpPic = pygame.transform.rotate(self.playerRightPic, 90)
+        self.playerUpRightPic = pygame.transform.rotate(self.playerRightPic, 45)
+        self.playerDownRightPic = pygame.transform.rotate(self.playerRightPic, -45)
+        self.playerUpLeftPic = pygame.transform.rotate(self.playerLeftPic, -45)
+        self.playerDownLeftPic = pygame.transform.rotate(self.playerLeftPic, 45)
         self.playerDownPic = pygame.transform.rotate(self.playerRightPic, -90)
 
     def display(self):
@@ -125,7 +130,7 @@ class Pacman(Entity):
             self.window.blit(self.playerDownPic, (self.x, self.y))
         self.hitBox = (self.x, self.y, self.entitySize, self.entitySize)
 
-    def move(self, direction):
+    def TwoDmove(self, direction):
         player.previousDirection = player.direction
         player.direction = direction
         if self.direction == 'left' and self.x > 0:
@@ -173,6 +178,15 @@ class Pacman(Entity):
                         entity.hitBox[1] + entity.hitBox[2] > self.hitBox[1]:
                     return True
         return False
+
+
+class MapHexagon:
+    def __init__(self, x, y, length, window):
+        self.x = x
+        self.y = y
+        self.length = length
+        self.window = window
+    pass
 
 
 class MapSquare:
@@ -261,24 +275,24 @@ class TwoDMap:
                     self.dots.append(Dot(x, y, 3, 3, screen, 'dot.png'))
 
 
-def displayMainMenu():
+def displayButtonMenu(Title, TopButton, MiddleButton, LastButton, restButtons):
     screen.fill((255, 255, 255))
-    if not mouseRestPlay:
+    if not restButtons[0]:
         pygame.draw.rect(screen, (0, 128, 0), (175, 250, 150, 50))
     else:
         pygame.draw.rect(screen, (0, 178, 0), (175, 250, 150, 50))
-    if not mouseRestConfigure:
+    if not restButtons[1]:
         pygame.draw.rect(screen, (0, 0, 128), (175, 350, 150, 50))
     else:
         pygame.draw.rect(screen, (0, 0, 178), (175, 350, 150, 50))
-    if not mouseRestExit:
+    if not restButtons[2]:
         pygame.draw.rect(screen, (128, 0, 0), (175, 450, 150, 50))
     else:
         pygame.draw.rect(screen, (178, 0, 0), (175, 450, 150, 50))
-    screen.blit(textTitle, textRectTitle)
-    screen.blit(textExit, textRectExit)
-    screen.blit(textPlay, textRectPlay)
-    screen.blit(textConfigure, textRectConfigure)
+    screen.blit(Title, textRectTitle)
+    screen.blit(TopButton, textRectTop)
+    screen.blit(MiddleButton, textRectMiddle)
+    screen.blit(LastButton, textRectBottom)
     pygame.display.update()
 
 
@@ -297,6 +311,27 @@ def displayGameWindow():
     pinky.display()
     clyde.display()
     pygame.display.update()
+
+
+def menuButtonFunctions(restButtons):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+    if 200 + 150 > mouse[0] > 200 and 250 + 50 > mouse[1] > 250:
+        restButtons[0] = True
+        if click[0] == 1:
+            return 'Top'
+    elif 200 + 150 > mouse[0] > 200 and 350 + 50 > mouse[1] > 350:
+        restButtons[1] = True
+        if click[0] == 1:
+            return 'Mid'
+    elif 200 + 150 > mouse[0] > 200 and 450 + 50 > mouse[1] > 450:
+        restButtons[2] = True
+        if click[0] == 1:
+            return 'Bot'
+    else:
+        restButtons[0] = False
+        restButtons[1] = False
+        restButtons[2] = False
 
 
 screenX = 500
@@ -322,24 +357,28 @@ fontButtons = pygame.font.Font('freesansbold.ttf', 20)
 fontScore = pygame.font.Font('freesansbold.ttf', 16)
 
 # title text creation
-textTitle = fontTitle.render('Pac-Man Game', True, (0, 0, 0))
-textRectTitle = textTitle.get_rect()
+textTitleMenu = fontTitle.render('Pac-Man Game', True, (0, 0, 0))
+textRectTitle = textTitleMenu.get_rect()
 textRectTitle.center = (250, 125)
+textTitleLevel = fontTitle.render('Pick The Level', True, (0, 0, 0))
 
-# Play button text and creation
+# Top button text and creation
 textPlay = fontButtons.render('Play', True, (255, 255, 255))
-textRectPlay = textPlay.get_rect()
-textRectPlay.center = (250, 275)
+textRectTop = textPlay.get_rect()
+textRectTop.center = (215, 275)
+textSquare = fontButtons.render('Square', True, (255, 255, 255))
 
-# configure button text and creation
+# Middle button text and creation
 textConfigure = fontButtons.render('Configure', True, (255, 255, 255))
-textRectConfigure = textPlay.get_rect()
-textRectConfigure.center = (225, 375)
+textRectMiddle = textPlay.get_rect()
+textRectMiddle.center = (215, 375)
+textHexagon = fontButtons.render('Hexagon', True, (255, 255, 255))
 
-# exit button text and creation
+# Bottom button text and creation
 textExit = fontButtons.render('Exit', True, (255, 255, 255))
-textRectExit = textExit.get_rect()
-textRectExit.center = (250, 475)
+textRectBottom = textExit.get_rect()
+textRectBottom.center = (215, 475)
+textArbitrary = fontButtons.render('Arbitrary', True, (255, 255, 255))
 
 
 scoreText = fontScore.render('Score:', True, (255, 255, 255))
@@ -348,13 +387,10 @@ scoreDisplay.center = (230, 260)
 scoreDisplayVar = scoreText.get_rect()
 scoreDisplayVar.center = (230, 280)
 
+
 # loop booleans
-mouseRestPlay = False
-mouseRestExit = False
-mouseRestConfigure= False
-menu = True
-gameScreen = False
-configScreen = False
+restButtons = [False, False, False]  # respective to [Top, Mid, Bottom]
+screenDisplay = [True, False, False, False]  # respective to [Menu, Level, Configuration, Game]
 gameRunning = True
 
 
@@ -367,25 +403,25 @@ while gameRunning:
         if event.type == pygame.QUIT:
             gameRunning = False
 
-    if gameScreen:
+    if screenDisplay[3]:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
             player.stepSize = 1
-            player.move('left')
+            player.TwoDmove('left')
         elif keys[pygame.K_RIGHT]:
             player.stepSize = 1
-            player.move('right')
+            player.TwoDmove('right')
         elif keys[pygame.K_UP]:
             player.stepSize = 1
-            player.move('up')
+            player.TwoDmove('up')
         elif keys[pygame.K_DOWN]:
             player.stepSize = 1
-            player.move('down')
+            player.TwoDmove('down')
         else:
             player.stepSize = 2
-        if player.move(player.direction) is False:
+        if player.TwoDmove(player.direction) is False:
             player.stepSize = 1
-            player.move(player.previousDirection)
+            player.TwoDmove(player.previousDirection)
         inky.move()
         blinky.move()
         pinky.move()
@@ -399,31 +435,34 @@ while gameRunning:
         TwoDMap.dotCheck()
         displayGameWindow()
 
-    elif menu:
-        mouse = pygame.mouse.get_pos()
-        click = pygame.mouse.get_pressed()
-        if 200 + 150 > mouse[0] > 200 and 250 + 50 > mouse[1] > 250:
-            mouseRestPlay = True
-            if click[0] == 1:
-                gameScreen = True
-                menu = False
-        elif 200 + 150 > mouse[0] > 200 and 350 + 50 > mouse[1] > 350:
-            mouseRestConfigure = True
-            if click[0] == 1:
-                configScreen = True
-                menu = False
-        elif 200 + 150 > mouse[0] > 200 and 450 + 50 > mouse[1] > 450:
-            mouseRestExit = True
-            if click[0] == 1:
-                gameRunning = False
-        else:
-            mouseRestConfigure = False
-            mouseRestPlay = False
-            mouseRestExit = False
-        displayMainMenu()
+    elif screenDisplay[0]:
+        pressed = menuButtonFunctions(restButtons)
+        if pressed == 'Top':
+            screenDisplay[1] = True
+            screenDisplay[0] = False
+            time.sleep(0.1)
+        elif pressed == 'Mid':
+            screenDisplay[2] = True
+            screenDisplay[0] = False
+            time.sleep(0.1)
+        elif pressed == 'Bot':
+            gameRunning = False
+        displayButtonMenu(textTitleMenu, textPlay, textConfigure, textExit, restButtons)
 
-    elif configScreen: # beginning for configuration
-        menu = True
-        configScreen = False
+    elif screenDisplay[2]:  # beginning for configuration
+        screenDisplay[0] = True
+        screenDisplay[2] = False
+
+    elif screenDisplay[1]:
+        pressed = menuButtonFunctions(restButtons)
+        if pressed == 'Top':
+            time.sleep(0.1)
+            screenDisplay[3] = True
+            screenDisplay[1] = False
+        elif pressed == 'Mid':
+            time.sleep(0.1)
+        elif pressed == 'Bot':
+            time.sleep(0.1)
+        displayButtonMenu(textTitleLevel, textSquare, textHexagon, textArbitrary, restButtons)
 
 pygame.quit()
