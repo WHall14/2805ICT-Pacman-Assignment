@@ -189,22 +189,6 @@ class Pacman(Entity):
                     return True
         return False
 
-class inky(Ghost):
-    def __init__(self, startingX, startingY, entitySize, window, entityImage):
-        super().__init__(startingX, startingY, entitySize, window, entityImage)
-
-class Blinky(Ghost):
-    def __init__(self, startingX, startingY, entitySize, window, entityImage):
-        super().__init__(startingX, startingY, entitySize, window, entityImage)
-
-class Pinky(Ghost):
-    def __init__(self, startingX, startingY, entitySize, window, entityImage):
-        super().__init__(startingX, startingY, entitySize, window, entityImage)
-
-class Clyde(Ghost):
-    def __init__(self, startingX, startingY, entitySize, window, entityImage):
-        super().__init__(startingX, startingY, entitySize, window, entityImage)
-
 
 class MapHexagon:
     def __init__(self, x, y, radius, window):
