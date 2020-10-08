@@ -1,8 +1,9 @@
-import pygame
-import random
-import winsound
-import time
 import math
+import random
+import time
+import winsound
+import abc
+import pygame
 
 pygame.init()
 
@@ -188,6 +189,22 @@ class Pacman(Entity):
                     return True
         return False
 
+class inky(Ghost):
+    def __init__(self, startingX, startingY, entitySize, window, entityImage):
+        super().__init__(startingX, startingY, entitySize, window, entityImage)
+
+class Blinky(Ghost):
+    def __init__(self, startingX, startingY, entitySize, window, entityImage):
+        super().__init__(startingX, startingY, entitySize, window, entityImage)
+
+class Pinky(Ghost):
+    def __init__(self, startingX, startingY, entitySize, window, entityImage):
+        super().__init__(startingX, startingY, entitySize, window, entityImage)
+
+class Clyde(Ghost):
+    def __init__(self, startingX, startingY, entitySize, window, entityImage):
+        super().__init__(startingX, startingY, entitySize, window, entityImage)
+
 
 class MapHexagon:
     def __init__(self, x, y, radius, window):
@@ -300,10 +317,23 @@ class TwoDMap:
                     self.dots.append(DotSquare(x, y, 3, 3, screen, 'dot.png'))
 
 
+def twoPointGradientFunction(x1, y1, x2, y2):
+    if (x2 - x1) != 0:
+        return (y2 - y1) / (x2 - x1)
+    else:
+        return -1
+
+
 class HexMap:
 
     def __init__(self):
         self.hexagon = []
+        self.lineFirst = [(35, 50), (35, 50), (450, 50), (35, 530), (35, 50), (35, 300), (245, 50),
+                          (160, 300), (330, 300)]
+        self.lineSecond = [(35, 530), (450, 290), (450, 530), (450, 530), (450, 50), (450, 300), (245, 530),
+                           (160, 530), (330, 530)]
+        for x, y in zip(self.lineFirst, self.lineSecond):
+            pygame.draw.line(screen, (0, 0, 0), x, y, 1)
 
     def displayDefaultMap(self):
         bool1 = True
@@ -314,7 +344,28 @@ class HexMap:
                     z = 42
                 else:
                     z = 0
-                self.hexagon.append(MapHexagon(x + z, y, 28, screen))
+                check = False
+                tempHex = MapHexagon(x + z, y, 28, screen)  # for each hex
+                for u, v in zip(self.lineFirst,
+                                self.lineSecond):  # For each line check that each hexagon is not colliding with a line
+                    m = twoPointGradientFunction(u[0], u[1], v[0], v[1])
+                    if m != -1 and m != 0:
+                        for a in range(u[0], v[0], 1):
+                            pass
+                            if tempHex.list[0][0] >= a >= tempHex.list[3][0] and tempHex.list[1][1] - 28 >= round(a * m) >= tempHex.list[5][1]:
+                                check = True
+                    elif m == -1:
+                        for a in range(u[1], v[1], 1):
+                            if tempHex.list[1][1] >= a >= tempHex.list[5][1] and u[0] < tempHex.list[0][0] < u[0] + 50:
+                                check = True
+                    elif m == 0:
+                        for a in range(u[0], v[0], 1):
+                            if tempHex.list[0][0] >= a >= tempHex.list[3][0] and tempHex.list[1][1] >= u[1] >= tempHex.list[5][1]:
+                                check = True
+                if check is False:
+                    self.hexagon.append(tempHex)
+                else:
+                    del tempHex
 
 
 def displayButtonMenu(Title, TopButton, MiddleButton, LastButton, restMouseButtons):
@@ -357,16 +408,8 @@ def displayTwoDGameWindow():
 
 def displayHexagonGameWindow():
     screen.fill((255, 255, 255))
-    pygame.draw.line(screen, (0, 0, 0), (35, 50), (35, 530), 1)
-    pygame.draw.line(screen, (0, 0, 0), (35, 50), (450, 290), 1)
-    pygame.draw.line(screen, (0, 0, 0), (450, 50), (450, 530), 1)
-    pygame.draw.line(screen, (0, 0, 0), (35, 530), (450, 530), 1)
-    pygame.draw.line(screen, (0, 0, 0), (35, 50), (450, 50), 1)
-    pygame.draw.line(screen, (0, 0, 0), (35, 300), (450, 300), 1)
-    pygame.draw.line(screen, (0, 0, 0), (245, 50), (245, 530), 1)
-    pygame.draw.line(screen, (0, 0, 0), (450, 50), (35, 290), 1)
-    pygame.draw.line(screen, (0, 0, 0), (160, 300), (160, 530), 1)
-    pygame.draw.line(screen, (0, 0, 0), (330, 300), (330, 530), 1)
+    # for x, y in zip(HexMap.lineFirst, HexMap.lineSecond):
+    #      pygame.draw.line(screen, (0, 0, 0), x, y, 1)
     for hexagon in HexMap.hexagon:
         hexagon.display()
     player.display()
@@ -454,10 +497,8 @@ gameRunning = True
 
 # clock used for FPS
 clock = pygame.time.Clock()
-
 while gameRunning:
     clock.tick(60)
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             gameRunning = False
