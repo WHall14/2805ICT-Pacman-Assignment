@@ -2,6 +2,7 @@ import pygame
 import random
 import winsound
 import time
+import math
 
 pygame.init()
 
@@ -106,9 +107,12 @@ class Pacman(Entity):
     def __init__(self, startingX, startingY, entitySize, window, entityImage):
         super().__init__(startingX, startingY, entitySize, window, entityImage)
         self.stepSize = 2
+        self.scoreAmount = 100
+        self.score = -100
+        self.oldTime = 0
+        self.currentTime = 0
 
         # images
-        self.score = -10
         self.playerRightPic = pygame.image.load(self.entityImage)
         self.playerRightPic = pygame.transform.scale(self.playerRightPic, (self.entitySize, self.entitySize))
         self.playerLeftPic = pygame.transform.flip(self.playerRightPic, self.entitySize, self.entitySize)
@@ -168,7 +172,12 @@ class Pacman(Entity):
                 self.hitBox[1] + self.hitBox[3] / 2 and dot.hitBox[0] + dot.hitBox[3] > self.hitBox[0] and \
                 dot.hitBox[1] + dot.hitBox[2] > self.hitBox[1]:
             dot.visible = False
-            player.score += 10
+            if self.currentTime - self.oldTime > 2000:
+                if player.scoreAmount > 1:
+                    player.scoreAmount = player.scoreAmount - 1
+                self.oldTime = pygame.time.get_ticks()
+            player.currentTime = pygame.time.get_ticks()
+            player.score += player.scoreAmount
 
     def ghostCollisionCheck(self):
         for entity in entityList:
@@ -181,12 +190,19 @@ class Pacman(Entity):
 
 
 class MapHexagon:
-    def __init__(self, x, y, length, window):
+    def __init__(self, x, y, radius, window):
         self.x = x
         self.y = y
-        self.length = length
+        self.n = 6
+        self.radius = radius
         self.window = window
-    pass
+        self.list = []
+        for i in range(self.n):
+            self.list.append((round(math.cos(i / self.n * math.pi * 2) * self.radius + self.x),
+                              round(math.sin(i / self.n * math.pi * 2) * self.radius + self.y)))
+
+    def display(self):
+        pygame.draw.polygon(self.window, (0, 0, 0), self.list, 2)
 
 
 class MapSquare:
@@ -203,16 +219,25 @@ class MapSquare:
         pygame.draw.rect(self.window, (0, 128, 128), self.hitBox)
 
 
-class Dot(MapSquare):
+class DotSquare(MapSquare):
 
     def __init__(self, x, y, width, height, window, pic):
         super().__init__(x, y, width, height, window)
-        self.MapSquarePic = pygame.image.load(pic)
+        self.dotSquarePic = pygame.image.load(pic)
         self.visible = True
 
     def display(self):
         if self.visible:
-            self.window.blit(self.MapSquarePic, (self.x, self.y))
+            self.window.blit(self.dotSquarePic, (self.x, self.y))
+
+
+class FruitSquare(DotSquare):
+    def __init__(self, x, y, width, height, window, pic):
+        super().__init__(x, y, width, height, window, pic)
+
+    def display(self):
+        if self.visible:
+            self.window.blit(self.dotSquarePic, (self.x, self.y))
 
 
 class TwoDMap:
@@ -272,20 +297,37 @@ class TwoDMap:
                 if (x, y) not in self.nodes and (x, y) not in self.edges:
                     self.walls.append(MapSquare(x + 1, y + 1, 22, 22, screen))
                 elif (x, y) not in self.middle:
-                    self.dots.append(Dot(x, y, 3, 3, screen, 'dot.png'))
+                    self.dots.append(DotSquare(x, y, 3, 3, screen, 'dot.png'))
 
 
-def displayButtonMenu(Title, TopButton, MiddleButton, LastButton, restButtons):
+class HexMap:
+
+    def __init__(self):
+        self.hexagon = []
+
+    def displayDefaultMap(self):
+        bool1 = True
+        for y in range(-50, 650, 24):
+            bool1 = not bool1
+            for x in range(-50, 550, 84):
+                if bool1:
+                    z = 42
+                else:
+                    z = 0
+                self.hexagon.append(MapHexagon(x + z, y, 28, screen))
+
+
+def displayButtonMenu(Title, TopButton, MiddleButton, LastButton, restMouseButtons):
     screen.fill((255, 255, 255))
-    if not restButtons[0]:
+    if not restMouseButtons[0]:
         pygame.draw.rect(screen, (0, 128, 0), (175, 250, 150, 50))
     else:
         pygame.draw.rect(screen, (0, 178, 0), (175, 250, 150, 50))
-    if not restButtons[1]:
+    if not restMouseButtons[1]:
         pygame.draw.rect(screen, (0, 0, 128), (175, 350, 150, 50))
     else:
         pygame.draw.rect(screen, (0, 0, 178), (175, 350, 150, 50))
-    if not restButtons[2]:
+    if not restMouseButtons[2]:
         pygame.draw.rect(screen, (128, 0, 0), (175, 450, 150, 50))
     else:
         pygame.draw.rect(screen, (178, 0, 0), (175, 450, 150, 50))
@@ -296,7 +338,7 @@ def displayButtonMenu(Title, TopButton, MiddleButton, LastButton, restButtons):
     pygame.display.update()
 
 
-def displayGameWindow():
+def displayTwoDGameWindow():
     screen.fill((0, 0, 0))  # makes the game teal
     for singleWall in TwoDMap.walls:
         singleWall.display()
@@ -313,25 +355,43 @@ def displayGameWindow():
     pygame.display.update()
 
 
-def menuButtonFunctions(restButtons):
+def displayHexagonGameWindow():
+    screen.fill((255, 255, 255))
+    pygame.draw.line(screen, (0, 0, 0), (35, 50), (35, 530), 1)
+    pygame.draw.line(screen, (0, 0, 0), (35, 50), (450, 290), 1)
+    pygame.draw.line(screen, (0, 0, 0), (450, 50), (450, 530), 1)
+    pygame.draw.line(screen, (0, 0, 0), (35, 530), (450, 530), 1)
+    pygame.draw.line(screen, (0, 0, 0), (35, 50), (450, 50), 1)
+    pygame.draw.line(screen, (0, 0, 0), (35, 300), (450, 300), 1)
+    pygame.draw.line(screen, (0, 0, 0), (245, 50), (245, 530), 1)
+    pygame.draw.line(screen, (0, 0, 0), (450, 50), (35, 290), 1)
+    pygame.draw.line(screen, (0, 0, 0), (160, 300), (160, 530), 1)
+    pygame.draw.line(screen, (0, 0, 0), (330, 300), (330, 530), 1)
+    for hexagon in HexMap.hexagon:
+        hexagon.display()
+    player.display()
+    pygame.display.update()
+
+
+def menuButtonFunctions(restMouseButtons):
     mouse = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
     if 200 + 150 > mouse[0] > 200 and 250 + 50 > mouse[1] > 250:
-        restButtons[0] = True
+        restMouseButtons[0] = True
         if click[0] == 1:
             return 'Top'
     elif 200 + 150 > mouse[0] > 200 and 350 + 50 > mouse[1] > 350:
-        restButtons[1] = True
+        restMouseButtons[1] = True
         if click[0] == 1:
             return 'Mid'
     elif 200 + 150 > mouse[0] > 200 and 450 + 50 > mouse[1] > 450:
-        restButtons[2] = True
+        restMouseButtons[2] = True
         if click[0] == 1:
             return 'Bot'
     else:
-        restButtons[0] = False
-        restButtons[1] = False
-        restButtons[2] = False
+        restMouseButtons[0] = False
+        restMouseButtons[1] = False
+        restMouseButtons[2] = False
 
 
 screenX = 500
@@ -349,7 +409,7 @@ blinky = Ghost(274, 199, 27, screen, 'blinky.jpg')
 player = Pacman(24, 24, 27, screen, 'pac.png')
 entityList = [clyde, pinky, inky, blinky, player]
 TwoDMap = TwoDMap()
-TwoDMap.displayDefaultMap()
+HexMap = HexMap()
 
 # Text and font setup
 fontTitle = pygame.font.Font('freesansbold.ttf', 32)
@@ -380,22 +440,21 @@ textRectBottom = textExit.get_rect()
 textRectBottom.center = (215, 475)
 textArbitrary = fontButtons.render('Arbitrary', True, (255, 255, 255))
 
-
 scoreText = fontScore.render('Score:', True, (255, 255, 255))
 scoreDisplay = scoreText.get_rect()
 scoreDisplay.center = (230, 260)
 scoreDisplayVar = scoreText.get_rect()
 scoreDisplayVar.center = (230, 280)
 
-
 # loop booleans
 restButtons = [False, False, False]  # respective to [Top, Mid, Bottom]
-screenDisplay = [True, False, False, False]  # respective to [Menu, Level, Configuration, Game]
+screenDisplay = [True, False, False, False,
+                 False]  # respective to [Menu, Level, Configuration, Square, Hexagon, Arbitrary]
 gameRunning = True
-
 
 # clock used for FPS
 clock = pygame.time.Clock()
+
 while gameRunning:
     clock.tick(60)
 
@@ -403,7 +462,41 @@ while gameRunning:
         if event.type == pygame.QUIT:
             gameRunning = False
 
-    if screenDisplay[3]:
+    if screenDisplay[0]:
+        pressed = menuButtonFunctions(restButtons)
+        if pressed == 'Top':
+            screenDisplay[1] = True
+            screenDisplay[0] = False
+            time.sleep(0.5)
+        elif pressed == 'Mid':
+            screenDisplay[2] = True
+            screenDisplay[0] = False
+            time.sleep(0.5)
+        elif pressed == 'Bot':
+            gameRunning = False
+        displayButtonMenu(textTitleMenu, textPlay, textConfigure, textExit, restButtons)
+
+    elif screenDisplay[1]:
+        pressed = menuButtonFunctions(restButtons)
+        if pressed == 'Top':
+            time.sleep(0.5)
+            screenDisplay[3] = True
+            screenDisplay[1] = False
+            TwoDMap.displayDefaultMap()
+        elif pressed == 'Mid':
+            screenDisplay[4] = True
+            screenDisplay[1] = False
+            HexMap.displayDefaultMap()
+            time.sleep(0.5)
+        elif pressed == 'Bot':
+            time.sleep(0.5)
+        displayButtonMenu(textTitleLevel, textSquare, textHexagon, textArbitrary, restButtons)
+
+    elif screenDisplay[2]:  # beginning for configuration
+        screenDisplay[0] = True
+        screenDisplay[2] = False
+
+    elif screenDisplay[3]:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
             player.stepSize = 1
@@ -433,36 +526,27 @@ while gameRunning:
             player.y = 24
         TwoDMap.teleportCheck()
         TwoDMap.dotCheck()
-        displayGameWindow()
+        displayTwoDGameWindow()
 
-    elif screenDisplay[0]:
-        pressed = menuButtonFunctions(restButtons)
-        if pressed == 'Top':
-            screenDisplay[1] = True
-            screenDisplay[0] = False
-            time.sleep(0.1)
-        elif pressed == 'Mid':
-            screenDisplay[2] = True
-            screenDisplay[0] = False
-            time.sleep(0.1)
-        elif pressed == 'Bot':
-            gameRunning = False
-        displayButtonMenu(textTitleMenu, textPlay, textConfigure, textExit, restButtons)
-
-    elif screenDisplay[2]:  # beginning for configuration
-        screenDisplay[0] = True
-        screenDisplay[2] = False
-
-    elif screenDisplay[1]:
-        pressed = menuButtonFunctions(restButtons)
-        if pressed == 'Top':
-            time.sleep(0.1)
-            screenDisplay[3] = True
-            screenDisplay[1] = False
-        elif pressed == 'Mid':
-            time.sleep(0.1)
-        elif pressed == 'Bot':
-            time.sleep(0.1)
-        displayButtonMenu(textTitleLevel, textSquare, textHexagon, textArbitrary, restButtons)
+    elif screenDisplay[4]:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            player.stepSize = 1
+            player.TwoDmove('left')
+        elif keys[pygame.K_RIGHT]:
+            player.stepSize = 1
+            player.TwoDmove('right')
+        elif keys[pygame.K_UP]:
+            player.stepSize = 1
+            player.TwoDmove('up')
+        elif keys[pygame.K_DOWN]:
+            player.stepSize = 1
+            player.TwoDmove('down')
+        else:
+            player.stepSize = 2
+        if player.TwoDmove(player.direction) is False:
+            player.stepSize = 1
+            player.TwoDmove(player.previousDirection)
+        displayHexagonGameWindow()
 
 pygame.quit()
