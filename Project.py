@@ -392,8 +392,8 @@ def displayTwoDGameWindow():
 
 def displayHexagonGameWindow():
     screen.fill((255, 255, 255))
-    # for x, y in zip(HexMap.lineFirst, HexMap.lineSecond):
-    #      pygame.draw.line(screen, (0, 0, 0), x, y, 1)
+    for x, y in zip(HexMap.lineFirst, HexMap.lineSecond):
+         pygame.draw.line(screen, (0, 0, 0), x, y, 1)
     for hexagon in HexMap.hexagon:
         hexagon.display()
     player.display()
